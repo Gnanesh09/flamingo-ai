@@ -1,0 +1,1105 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 1.0.0
+  description: Flamingo AI sandbox receivables API
+servers:
+  - url: /api
+paths:
+  /commerce/voice/cue:
+    get:
+      operationId: getCommerceVoiceCue
+      responses:
+        "200":
+          description: Cached spoken work-in-progress acknowledgment
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SpeechAudio" }
+  /commerce/evidence:
+    post:
+      operationId: addCommerceEvidence
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CommerceEvidenceInput" }
+      responses:
+        "200":
+          description: Evidence saved and analyzed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommerceState" }
+  /commerce/evidence/{ticketId}/{evidenceId}:
+    get:
+      operationId: getCommerceEvidenceImage
+      parameters:
+        - { name: ticketId, in: path, required: true, schema: { type: string } }
+        - { name: evidenceId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Private evidence image
+          content:
+            image/jpeg:
+              schema: { type: string, format: binary }
+  /commerce/evidence/retry:
+    post:
+      operationId: retryCommerceEvidence
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CommerceEvidenceRetry" }
+      responses:
+        "200":
+          description: Updated evidence analysis
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommerceState" }
+  /commerce/policy:
+    post:
+      operationId: updateCommercePolicy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CommercePolicyInput" }
+      responses:
+        "200":
+          description: Versioned policy update with refreshed workspace
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommerceState" }
+  /commerce/state:
+    get:
+      operationId: getCommerceState
+      responses:
+        "200":
+          description: Current isolated KikoStore demo
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommerceState" }
+  /commerce/demo:
+    post:
+      operationId: startCommerceDemo
+      responses:
+        "200":
+          description: Resume or create isolated demo session
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommerceState" }
+  /commerce/action:
+    post:
+      operationId: commerceAction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CommerceActionInput" }
+      responses:
+        "200":
+          description: Persisted action result
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommerceActionResult" }
+  /commerce/voice/transcribe:
+    post:
+      operationId: commerceTranscribe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CommerceVoiceInput" }
+      responses:
+        "200":
+          description: Transcript
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Transcript" }
+  /commerce/voice/speak:
+    post:
+      operationId: commerceSpeak
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CommerceSpeechInput" }
+      responses:
+        "200":
+          description: Speech audio
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SpeechAudio" }
+  /resolutions:
+    get:
+      operationId: listResolutions
+      responses:
+        "200":
+          description: Decision queue
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Resolution" } }
+  /resolutions/{id}/decision:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    post:
+      operationId: decideResolution
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ResolutionDecision" }
+      responses:
+        "200":
+          description: Updated resolution
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Resolution" }
+  /resolutions/{id}/analyze:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    post:
+      operationId: analyzeResolution
+      responses:
+        "200":
+          description: Grounded analysis without actions
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ResolutionAnalysis" }
+  /invoices/{id}/portal:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    post:
+      operationId: createPortalLink
+      responses:
+        "201":
+          description: New one-invoice link; replaces previous link
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalLink" }
+    delete:
+      operationId: revokePortalLink
+      responses:
+        "200":
+          description: Revoked
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Result" }
+  /portal/view:
+    post:
+      operationId: viewPortal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PortalAccess" }
+      responses:
+        "200":
+          description: Scoped customer portal
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalView" }
+  /portal/respond:
+    post:
+      operationId: respondPortal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PortalResponse" }
+      responses:
+        "200":
+          description: Customer response saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalView" }
+  /portal/sync:
+    post:
+      operationId: syncPortal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PortalAccess" }
+      responses:
+        "200":
+          description: PayPal status verified
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalView" }
+  /portal/transcribe:
+    post:
+      operationId: transcribePortal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PortalAudio" }
+      responses:
+        "200":
+          description: Customer voice note transcript
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Transcript" }
+  /healthz:
+    get:
+      operationId: healthCheck
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HealthStatus" }
+  /session:
+    get:
+      operationId: getSession
+      responses:
+        "200":
+          description: Current demo session
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Session" }
+    post:
+      operationId: startSession
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SessionInput" }
+      responses:
+        "200":
+          description: Started
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Session" }
+    delete:
+      operationId: endSession
+      responses:
+        "200":
+          description: Ended
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Result" }
+  /dashboard:
+    get:
+      operationId: getDashboard
+      responses:
+        "200":
+          description: Receivables summary
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Dashboard" }
+  /invoices:
+    get:
+      operationId: listInvoices
+      parameters:
+        - { name: search, in: query, schema: { type: string } }
+        - { name: status, in: query, schema: { type: string } }
+        - { name: customerId, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: Invoices
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Invoice" } }
+    post:
+      operationId: createInvoice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InvoiceInput" }
+      responses:
+        "201":
+          description: Draft created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Invoice" }
+  /invoices/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    get:
+      operationId: getInvoice
+      responses:
+        "200":
+          description: Invoice
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Invoice" }
+    patch:
+      operationId: updateInvoice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InvoiceInput" }
+      responses:
+        "200":
+          description: Updated draft
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Invoice" }
+    delete:
+      operationId: deleteInvoice
+      responses:
+        "200":
+          description: Deleted draft
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Result" }
+  /invoices/{id}/send:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    post:
+      operationId: sendInvoice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ApprovalInput" }
+      responses:
+        "200":
+          description: PayPal sandbox invoice sent
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Invoice" }
+  /invoices/{id}/sync:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    post:
+      operationId: syncInvoice
+      responses:
+        "200":
+          description: Verified against PayPal
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Invoice" }
+  /customers:
+    get:
+      operationId: listCustomers
+      responses:
+        "200":
+          description: Customers and payment totals
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Customer" } }
+    post:
+      operationId: createCustomer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CustomerInput" }
+      responses:
+        "201":
+          description: Customer created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Customer" }
+  /reminders:
+    get:
+      operationId: listReminders
+      responses:
+        "200":
+          description: Approval queue
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Reminder" } }
+    post:
+      operationId: prepareReminder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReminderInput" }
+      responses:
+        "201":
+          description: Reminder prepared; nothing sent
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Reminder" }
+  /reminders/{id}/decision:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    post:
+      operationId: decideReminder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReminderDecision" }
+      responses:
+        "200":
+          description: Decision saved; sending requires PayPal
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Reminder" }
+  /activity:
+    get:
+      operationId: listActivity
+      responses:
+        "200":
+          description: Audit timeline
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Activity" } }
+  /assistant:
+    post:
+      operationId: askAssistant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AssistantInput" }
+      responses:
+        "200":
+          description: Grounded response and optional approval drafts
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AssistantReply" }
+  /conversation:
+    get:
+      operationId: getConversation
+      responses:
+        "200":
+          description: Conversation history
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/ChatMessage" } }
+  /integrations:
+    get:
+      operationId: getIntegrations
+      responses:
+        "200":
+          description: Configuration availability, not connectivity guarantees
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Integration" } }
+  /settings:
+    get:
+      operationId: getSettings
+      responses:
+        "200":
+          description: Business settings
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Settings" }
+    patch:
+      operationId: updateSettings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Settings" }
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Settings" }
+  /admin:
+    get:
+      operationId: getAdmin
+      responses:
+        "200":
+          description: Current sandbox workspace operations
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminOverview" }
+  /voice/transcribe:
+    post:
+      operationId: transcribeVoice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/VoiceInput" }
+      responses:
+        "200":
+          description: Deepgram transcript
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Transcript" }
+  /voice/speak:
+    post:
+      operationId: speakVoice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SpeechInput" }
+      responses:
+        "200":
+          description: Ephemeral Deepgram speech audio
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SpeechAudio" }
+components:
+  schemas:
+    Resolution:
+      type: object
+      required: [id, invoiceId, invoiceNumber, customerName, balance, source, kind, status, messages, createdAt, updatedAt, version, reminderPaused]
+      properties:
+        id: { type: string }
+        invoiceId: { type: string }
+        invoiceNumber: { type: string }
+        customerName: { type: string }
+        balance: { type: number }
+        source: { type: string, enum: [demo, local, paypal] }
+        kind: { type: string, enum: [needs_time, dispute, already_paid, question] }
+        status: { type: string, enum: [needs_review, waiting_customer, committed, missed, verification_needed, resolved] }
+        messages: { type: array, items: { $ref: "#/components/schemas/ResolutionMessage" } }
+        commitment: { $ref: "#/components/schemas/Commitment" }
+        requestedDate: { type: string }
+        requestedAmount: { type: number }
+        createdAt: { type: string }
+        updatedAt: { type: string }
+        version: { type: integer }
+        reminderPaused: { type: boolean }
+    ResolutionMessage:
+      type: object
+      required: [id, author, text, createdAt]
+      properties:
+        id: { type: string }
+        author: { type: string, enum: [customer, owner, system] }
+        text: { type: string }
+        createdAt: { type: string }
+    Commitment:
+      type: object
+      required: [amount, date, state]
+      properties:
+        amount: { type: number }
+        date: { type: string }
+        state: { type: string, enum: [proposed, accepted, fulfilled, missed] }
+    ResolutionDecision:
+      type: object
+      required: [action, message, version]
+      properties:
+        action: { type: string, enum: [approve_date, propose_plan, reply, reject] }
+        message: { type: string, minLength: 1, maxLength: 2000 }
+        version: { type: integer, minimum: 0 }
+        date: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$' }
+        amount: { type: number, minimum: 0.01, maximum: 1000000 }
+    ResolutionAnalysis:
+      type: object
+      required: [summary, suggestedAction, evidence, steps, engine]
+      properties:
+        summary: { type: string }
+        suggestedAction: { type: string }
+        evidence: { type: array, items: { type: string } }
+        steps: { type: array, items: { type: string } }
+        engine: { type: string, enum: [groq, demo-rules] }
+    PortalLink:
+      type: object
+      required: [path, expiresAt]
+      properties:
+        path: { type: string }
+        expiresAt: { type: string }
+    PortalAccess:
+      type: object
+      required: [token]
+      properties:
+        token: { type: string, minLength: 70, maxLength: 100 }
+    PortalResponse:
+      type: object
+      required: [token, action, message, version]
+      properties:
+        token: { type: string, minLength: 70, maxLength: 100 }
+        action: { type: string, enum: [needs_time, dispute, already_paid, question, reply, accept_proposal] }
+        message: { type: string, minLength: 1, maxLength: 2000 }
+        version: { type: integer, minimum: 0 }
+        date: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$' }
+        amount: { type: number, minimum: 0.01, maximum: 1000000 }
+    PortalView:
+      type: object
+      required: [businessName, invoice, expiresAt, voiceEnabled]
+      properties:
+        businessName: { type: string }
+        invoice: { $ref: "#/components/schemas/PortalInvoice" }
+        resolution: { $ref: "#/components/schemas/Resolution" }
+        expiresAt: { type: string }
+        voiceEnabled: { type: boolean }
+    PortalInvoice:
+      type: object
+      required: [number, customerName, balance, amount, paidAmount, dueDate, currency, status, source, items]
+      properties:
+        number: { type: string }
+        customerName: { type: string }
+        balance: { type: number }
+        amount: { type: number }
+        paidAmount: { type: number }
+        dueDate: { type: string }
+        currency: { type: string }
+        status: { type: string }
+        source: { type: string, enum: [demo, local, paypal] }
+        paymentUrl: { type: string }
+        lastSyncedAt: { type: string }
+        items: { type: array, items: { $ref: "#/components/schemas/LineItem" } }
+    PortalAudio:
+      type: object
+      required: [token, audio, mimeType]
+      properties:
+        token: { type: string, minLength: 70, maxLength: 100 }
+        audio: { type: string, maxLength: 4000000 }
+        mimeType: { type: string, enum: [audio/webm, audio/webm;codecs=opus, audio/mp4, audio/ogg;codecs=opus] }
+    HealthStatus:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string }
+    Result:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string }
+    SessionInput:
+      type: object
+      required: [username, role]
+      properties:
+        username: { type: string, minLength: 2, maxLength: 40 }
+        role: { type: string, enum: [business, admin] }
+    Session:
+      type: object
+      required: [active, username, role, mode, storage]
+      properties:
+        active: { type: boolean }
+        username: { type: string }
+        role: { type: string, enum: [business, admin] }
+        mode: { type: string, enum: [demo] }
+        storage: { type: string, enum: [local-demo, mongodb] }
+    LineItem:
+      type: object
+      required: [name, quantity, unitPrice]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100 }
+        quantity: { type: integer, minimum: 1, maximum: 10000 }
+        unitPrice: { type: number, minimum: 0.01, maximum: 100000 }
+    InvoiceInput:
+      type: object
+      required: [customerId, dueDate, items, notes]
+      properties:
+        customerId: { type: string, minLength: 1 }
+        dueDate: { type: string, format: date }
+        items: { type: array, minItems: 1, maxItems: 20, items: { $ref: "#/components/schemas/LineItem" } }
+        notes: { type: string, maxLength: 1000 }
+    Invoice:
+      type: object
+      required: [id, number, customerId, customerName, customerEmail, dueDate, createdAt, items, notes, amount, balance, paidAmount, currency, status, source, daysOverdue]
+      properties:
+        id: { type: string }
+        number: { type: string }
+        customerId: { type: string }
+        customerName: { type: string }
+        customerEmail: { type: string }
+        dueDate: { type: string }
+        createdAt: { type: string }
+        items: { type: array, items: { $ref: "#/components/schemas/LineItem" } }
+        notes: { type: string }
+        amount: { type: number }
+        balance: { type: number }
+        paidAmount: { type: number }
+        currency: { type: string }
+        status: { type: string, enum: [draft, sent, overdue, partially_paid, paid, cancelled] }
+        source: { type: string, enum: [demo, local, paypal] }
+        daysOverdue: { type: integer }
+        paypalId: { type: string }
+        paymentUrl: { type: string }
+        lastSyncedAt: { type: string }
+    CustomerInput:
+      type: object
+      required: [name, email, company]
+      properties:
+        name: { type: string, minLength: 2, maxLength: 80 }
+        email: { type: string, format: email, maxLength: 120 }
+        company: { type: string, maxLength: 80 }
+    Customer:
+      type: object
+      required: [id, name, email, company, outstanding, received, invoiceCount]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string }
+        company: { type: string }
+        outstanding: { type: number }
+        received: { type: number }
+        invoiceCount: { type: integer }
+    ApprovalInput:
+      type: object
+      required: [approved]
+      properties:
+        approved: { type: boolean }
+    ReminderInput:
+      type: object
+      required: [invoiceId, tone]
+      properties:
+        invoiceId: { type: string }
+        tone: { type: string, enum: [friendly, professional, firm] }
+    ReminderDecision:
+      type: object
+      required: [decision]
+      properties:
+        decision: { type: string, enum: [approve, reject, send] }
+        message: { type: string, minLength: 10, maxLength: 1000 }
+    Reminder:
+      type: object
+      required: [id, invoiceId, invoiceNumber, customerName, customerEmail, amount, tone, message, status, createdAt, source]
+      properties:
+        id: { type: string }
+        invoiceId: { type: string }
+        invoiceNumber: { type: string }
+        customerName: { type: string }
+        customerEmail: { type: string }
+        amount: { type: number }
+        tone: { type: string }
+        message: { type: string }
+        status: { type: string, enum: [pending, approved, rejected, sent, failed] }
+        createdAt: { type: string }
+        approvedAt: { type: string }
+        sentAt: { type: string }
+        error: { type: string }
+        source: { type: string, enum: [template, groq] }
+    Activity:
+      type: object
+      required: [id, type, title, detail, status, createdAt]
+      properties:
+        id: { type: string }
+        type: { type: string }
+        title: { type: string }
+        detail: { type: string }
+        status: { type: string, enum: [info, success, pending, error] }
+        createdAt: { type: string }
+        invoiceId: { type: string }
+    Dashboard:
+      type: object
+      required: [outstanding, overdue, received, draftAmount, overdueCount, invoiceCount, pendingApprovals, collectionRate, priorityInvoices, recentActivity, aging]
+      properties:
+        outstanding: { type: number }
+        overdue: { type: number }
+        received: { type: number }
+        draftAmount: { type: number }
+        overdueCount: { type: integer }
+        invoiceCount: { type: integer }
+        pendingApprovals: { type: integer }
+        collectionRate: { type: number }
+        priorityInvoices: { type: array, items: { $ref: "#/components/schemas/Invoice" } }
+        recentActivity: { type: array, items: { $ref: "#/components/schemas/Activity" } }
+        aging: { type: array, items: { $ref: "#/components/schemas/AgingBucket" } }
+    AgingBucket:
+      type: object
+      required: [label, amount, count]
+      properties:
+        label: { type: string }
+        amount: { type: number }
+        count: { type: integer }
+    AssistantInput:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string, minLength: 1, maxLength: 1000 }
+    AssistantReply:
+      type: object
+      required: [message, engine, steps, invoices, reminderIds, cached]
+      properties:
+        message: { type: string }
+        engine: { type: string, enum: [groq, demo-rules] }
+        steps: { type: array, items: { type: string } }
+        invoices: { type: array, items: { $ref: "#/components/schemas/Invoice" } }
+        reminderIds: { type: array, items: { type: string } }
+        cached: { type: boolean }
+    ChatMessage:
+      type: object
+      required: [id, role, content, createdAt]
+      properties:
+        id: { type: string }
+        role: { type: string, enum: [user, assistant] }
+        content: { type: string }
+        createdAt: { type: string }
+        engine: { type: string }
+    Integration:
+      type: object
+      required: [id, name, configured, status, description]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        configured: { type: boolean }
+        status: { type: string }
+        description: { type: string }
+    Settings:
+      type: object
+      required: [businessName, senderEmail, reminderTone, minimumOverdueDays]
+      properties:
+        businessName: { type: string, minLength: 2, maxLength: 80 }
+        senderEmail: { type: string, maxLength: 120 }
+        reminderTone: { type: string, enum: [friendly, professional, firm] }
+        minimumOverdueDays: { type: integer, minimum: 0, maximum: 90 }
+    AdminOverview:
+      type: object
+      required: [integrations, activity, groqCallsToday, groqDailyLimit, groqCooldownSeconds, storage, safety]
+      properties:
+        integrations: { type: array, items: { $ref: "#/components/schemas/Integration" } }
+        activity: { type: array, items: { $ref: "#/components/schemas/Activity" } }
+        groqCallsToday: { type: integer }
+        groqDailyLimit: { type: integer }
+        groqCooldownSeconds: { type: integer }
+        storage: { type: string }
+        safety: { type: array, items: { type: string } }
+    VoiceInput:
+      type: object
+      required: [audio, mimeType]
+      properties:
+        audio: { type: string, maxLength: 4000000 }
+        mimeType: { type: string, enum: [audio/webm, audio/webm;codecs=opus, audio/mp4, audio/ogg;codecs=opus] }
+    Transcript:
+      type: object
+      required: [text]
+      properties:
+        text: { type: string }
+    SpeechInput:
+      type: object
+      required: [text]
+      properties:
+        text: { type: string, minLength: 1, maxLength: 1800 }
+    SpeechAudio:
+      type: object
+      required: [audio, mimeType]
+      properties:
+        audio: { type: string }
+        mimeType: { type: string }
+    CommerceProduct:
+      type: object
+      required: [id, name, description, category, price, image, rating, reviews, returnable]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string }
+        category: { type: string }
+        price: { type: number }
+        image: { type: string }
+        rating: { type: number }
+        reviews: { type: integer }
+        returnable: { type: boolean }
+    CommerceOrder:
+      type: object
+      required: [id, productId, quantity, amount, currency, createdAt, deliveredAt, status, source]
+      properties:
+        id: { type: string }
+        productId: { type: string }
+        quantity: { type: integer }
+        amount: { type: number }
+        currency: { type: string }
+        createdAt: { type: string }
+        deliveredAt: { type: string }
+        status: { type: string, enum: [created, paid, delivered, refund_pending, refunded, cancelled] }
+        source: { type: string, enum: [sample, paypal_sandbox] }
+        paypalOrderId: { type: string }
+        captureId: { type: string }
+        refundId: { type: string }
+        approvalUrl: { type: string }
+        paymentNote: { type: string }
+    CommerceMessage:
+      type: object
+      required: [id, role, text, at, channel]
+      properties:
+        id: { type: string }
+        role: { type: string, enum: [customer, agent, human, system] }
+        text: { type: string }
+        at: { type: string }
+        channel: { type: string, enum: [text, voice] }
+    CommerceStep:
+      type: object
+      required: [id, agent, detail, at]
+      properties:
+        id: { type: string }
+        agent: { type: string }
+        detail: { type: string }
+        at: { type: string }
+    CommerceTicket:
+      type: object
+      required: [id, orderId, status, intent, reason, createdAt, updatedAt, messages, steps, version, aiCalls, inputTokens, outputTokens, voiceSeconds, speechCharacters, estimatedCost, costBasis, refundState]
+      properties:
+        id: { type: string }
+        orderId: { type: string }
+        status: { type: string, enum: [open, awaiting_confirmation, escalated, awaiting_return, refund_pending, resolved, rejected] }
+        intent: { type: string, enum: [unknown, refund, return, question, human] }
+        reason: { type: string }
+        createdAt: { type: string }
+        updatedAt: { type: string }
+        messages: { type: array, items: { $ref: "#/components/schemas/CommerceMessage" } }
+        steps: { type: array, items: { $ref: "#/components/schemas/CommerceStep" } }
+        version: { type: integer }
+        aiCalls: { type: integer }
+        inputTokens: { type: integer }
+        outputTokens: { type: integer }
+        voiceSeconds: { type: number }
+        speechCharacters: { type: integer }
+        estimatedCost: { type: number }
+        costBasis: { type: string }
+        refundState: { type: string, enum: [none, simulated, submitted, completed, uncertain, failed] }
+        returnCode: { type: string }
+        assignedTo: { type: string }
+        proposedAction: { type: string, enum: [refund, return] }
+        closedAt: { type: string }
+        investigation: { $ref: "#/components/schemas/CommerceInvestigation" }
+        policyVersion: { type: string }
+        citations: { type: array, items: { $ref: "#/components/schemas/CommerceCitation" } }
+        evidence: { type: array, items: { $ref: "#/components/schemas/CommerceEvidence" } }
+    CommerceEvidenceInput:
+      type: object
+      required: [ticketId, version, name, kind, image]
+      properties:
+        ticketId: { type: string }
+        version: { type: integer }
+        name: { type: string, minLength: 1, maxLength: 120 }
+        kind: { type: string, enum: [damage, receipt, label] }
+        image: { type: string, minLength: 100, maxLength: 2100000 }
+    CommerceEvidenceRetry:
+      type: object
+      required: [ticketId, evidenceId, version]
+      properties:
+        ticketId: { type: string }
+        evidenceId: { type: string }
+        version: { type: integer }
+    CommerceEvidence:
+      type: object
+      required: [id, name, kind, status, createdAt, ocrText, observation, question, assessment, notice]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        kind: { type: string, enum: [damage, receipt, label] }
+        status: { type: string, enum: [processing, ready, failed] }
+        createdAt: { type: string }
+        ocrText: { type: string }
+        observation: { type: string }
+        question: { type: string }
+        assessment: { type: string, enum: [not_assessed, visible_damage, no_visible_damage, unclear] }
+        notice: { type: string }
+        vision:
+          $ref: "#/components/schemas/CommerceVisionFindings"
+    CommerceVisionFindings:
+      type: object
+      description: Structured, unverified visual inspection from an open-weight vision model. Never proof of cause, ownership or eligibility.
+      required: [model, subject, matchesOrder, labelConcern, imageQuality, damageTypes, location, severity, confidence]
+      properties:
+        model: { type: string }
+        subject: { type: string }
+        matchesOrder: { type: string, enum: ["yes", "no", unclear] }
+        labelConcern: { type: string }
+        imageQuality: { type: string, enum: [good, poor] }
+        damageTypes:
+          type: array
+          items: { type: string, enum: [crack, scratch, dent, tear, broken_part, missing_part, stain, water, packaging_damage, other] }
+        location: { type: string }
+        severity: { type: string, enum: [none, minor, moderate, severe] }
+        confidence: { type: number, minimum: 0, maximum: 1 }
+    CommerceInvestigation:
+      type: object
+      required: [summary, detail, question, stage, engine]
+      properties:
+        summary: { type: string }
+        detail: { type: string }
+        question: { type: string }
+        stage: { type: string, enum: [understanding, investigating, ready, handoff] }
+        engine: { type: string, enum: [rules, groq, guarded_fallback] }
+    CommerceCitation:
+      type: object
+      required: [documentId, title, page, excerpt, version]
+      properties:
+        documentId: { type: string }
+        title: { type: string }
+        page: { type: integer }
+        excerpt: { type: string }
+        version: { type: string }
+    CommercePolicyPage:
+      type: object
+      required: [page, text]
+      properties:
+        page: { type: integer, minimum: 1, maximum: 40 }
+        text: { type: string, minLength: 1, maxLength: 12000 }
+    CommercePolicyDocument:
+      type: object
+      required: [id, title, status, createdAt, pages, indexed]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        status: { type: string, enum: [draft, published, archived] }
+        createdAt: { type: string }
+        pages: { type: array, items: { $ref: "#/components/schemas/CommercePolicyPage" } }
+        indexed: { type: boolean }
+    CommercePolicyInput:
+      type: object
+      required: [action, version]
+      properties:
+        action: { type: string, enum: [import, publish, archive, update_rules] }
+        version: { type: string }
+        documentId: { type: string }
+        title: { type: string, minLength: 1, maxLength: 160 }
+        pages: { type: array, maxItems: 40, items: { $ref: "#/components/schemas/CommercePolicyPage" } }
+        returnDays: { type: integer, minimum: 1, maximum: 365 }
+        automaticLimit: { type: number, minimum: 0, maximum: 100 }
+        instantRefundLimit: { type: number, minimum: 0, maximum: 50 }
+    CommercePolicy:
+      type: object
+      required: [name, version, returnDays, automaticLimit, instantRefundLimit, text]
+      properties:
+        name: { type: string }
+        version: { type: string }
+        returnDays: { type: integer }
+        automaticLimit: { type: number }
+        instantRefundLimit: { type: number }
+        text: { type: string }
+    CommerceState:
+      type: object
+      required: [id, organization, customer, demo, products, orders, tickets, policy, revision, paypalConfigured, voiceConfigured, aiConfigured]
+      properties:
+        id: { type: string }
+        organization: { type: string }
+        customer: { type: string }
+        demo: { type: boolean }
+        products: { type: array, items: { $ref: "#/components/schemas/CommerceProduct" } }
+        orders: { type: array, items: { $ref: "#/components/schemas/CommerceOrder" } }
+        tickets: { type: array, items: { $ref: "#/components/schemas/CommerceTicket" } }
+        policy: { $ref: "#/components/schemas/CommercePolicy" }
+        revision: { type: integer }
+        paypalConfigured: { type: boolean }
+        voiceConfigured: { type: boolean }
+        aiConfigured: { type: boolean }
+        policyDocuments: { type: array, items: { $ref: "#/components/schemas/CommercePolicyDocument" } }
+        retrievalMode: { type: string, enum: [local_text, elastic_semantic] }
+        retrievalNotice: { type: string }
+    CommerceActionInput:
+      type: object
+      required: [action]
+      properties:
+        action:
+          type: string
+          enum: [sample_purchase, checkout, capture, open_ticket, message, confirm, escalate, human_reply, approve_refund, approve_return, received_return, reject, sync_refund, reopen]
+        productId: { type: string }
+        quantity: { type: integer, minimum: 1, maximum: 5 }
+        orderId: { type: string }
+        ticketId: { type: string }
+        message: { type: string, maxLength: 2000 }
+        channel: { type: string, enum: [text, voice] }
+        version: { type: integer }
+        requestId: { type: string, minLength: 8, maxLength: 80 }
+    CommerceActionResult:
+      type: object
+      required: [state]
+      properties:
+        state: { $ref: "#/components/schemas/CommerceState" }
+        orderId: { type: string }
+        ticketId: { type: string }
+        approvalUrl: { type: string }
+    CommerceVoiceInput:
+      type: object
+      required: [ticketId, audio, mimeType, seconds]
+      properties:
+        ticketId: { type: string }
+        audio: { type: string, maxLength: 4000000 }
+        mimeType: { type: string, enum: [audio/webm, audio/webm;codecs=opus, audio/mp4, audio/ogg;codecs=opus] }
+        seconds: { type: number, minimum: 0.1, maximum: 20 }
+    CommerceSpeechInput:
+      type: object
+      required: [ticketId, messageId]
+      properties:
+        ticketId: { type: string }
+        messageId: { type: string }
+

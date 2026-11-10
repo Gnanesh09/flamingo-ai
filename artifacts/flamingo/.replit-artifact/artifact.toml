@@ -1,0 +1,23 @@
+kind = "web"
+previewPath = "/"
+title = "Flamingo AI"
+description = "KikoStore with order-linked Flamingo AI returns and refunds, text and Deepgram browser calls, LangGraph policy agents, real-time human escalation, MongoDB and PayPal Sandbox."
+version = "1.0.0"
+id = "artifacts/flamingo"
+router = "path"
+
+[[services]]
+name = "web"
+paths = ["/"]
+localPort = 25363
+
+[services.development]
+run = "pnpm --filter @workspace/flamingo run dev"
+
+[services.production]
+build = ["pnpm", "--filter", "@workspace/flamingo", "run", "build"]
+run = ["pnpm", "--filter", "@workspace/flamingo", "run", "serve"]
+
+[services.env]
+PORT = "25363"
+BASE_PATH = "/"
