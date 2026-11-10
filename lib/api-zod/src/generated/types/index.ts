@@ -50,6 +50,7 @@ export * from './commerceStateRetrievalMode';
 export * from './commerceStep';
 export * from './commerceTicket';
 export * from './commerceTicketIntent';
+export * from './commerceTicketLanguageScript';
 export * from './commerceTicketProposedAction';
 export * from './commerceTicketRefundState';
 export * from './commerceTicketStatus';

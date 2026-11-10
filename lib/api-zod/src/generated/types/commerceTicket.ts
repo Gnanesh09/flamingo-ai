@@ -11,6 +11,7 @@ import type { CommerceInvestigation } from './commerceInvestigation';
 import type { CommerceMessage } from './commerceMessage';
 import type { CommerceStep } from './commerceStep';
 import type { CommerceTicketIntent } from './commerceTicketIntent';
+import type { CommerceTicketLanguageScript } from './commerceTicketLanguageScript';
 import type { CommerceTicketProposedAction } from './commerceTicketProposedAction';
 import type { CommerceTicketRefundState } from './commerceTicketRefundState';
 import type { CommerceTicketStatus } from './commerceTicketStatus';
@@ -42,4 +43,8 @@ export interface CommerceTicket {
   policyVersion?: string;
   citations?: CommerceCitation[];
   evidence?: CommerceEvidence[];
+  /** ISO 639-1 code of the customer's language */
+  language?: string;
+  languageName?: string;
+  languageScript?: CommerceTicketLanguageScript;
 }

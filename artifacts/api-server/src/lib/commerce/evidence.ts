@@ -9,6 +9,7 @@ import { assessDamage, VISION_MODEL } from "./vision";
 import { products } from "./catalog";
 import { notify, progress } from "./realtime";
 import { runAgents } from "./agent";
+import { localizeReplies } from "./language";
 
 export async function normalizeEvidence(encoded: string) {
   if (!/^[A-Za-z0-9+/]+={0,2}$/.test(encoded)) throw new AppError(400, "Choose a valid JPEG, PNG or WebP image.");
@@ -54,6 +55,7 @@ export async function inspectEvidence(d: CommerceDocument, t: CommerceTicket, e:
   if (t.status === "awaiting_confirmation") { t.status = "open"; delete t.proposedAction; }
   step(t, "Evidence intake", "Private image saved; unconfirmed proposal withdrawn. Images and OCR are untrusted evidence, not payment authority.");
   await save(); notify(d.id, d.revision);
+  const firstNew = t.messages.length;
   try {
     const o = d.orders.find(o => o.id === t.orderId);
     const product = products.find(p => p.id === o?.productId)?.name || "the ordered item";
@@ -93,6 +95,7 @@ export async function inspectEvidence(d: CommerceDocument, t: CommerceTicket, e:
     step(t, "Evidence assessment", `Analysis incomplete for ${e.name}. Original retained; no eligibility or payment change.`);
     message(t, "agent", `I saved ${e.name}, but couldn’t complete its analysis. ${e.notice}`);
   } finally {
+    await localizeReplies(d.id, t, firstNew);
     t.version++; await save(); notify(d.id, d.revision);
     progress(d.id, t.id, "evidence_done", "Your evidence is saved in this case.");
   }

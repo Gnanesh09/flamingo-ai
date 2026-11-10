@@ -3,7 +3,7 @@
  * 1K requests/day), so each model gets its own sliding window instead of one global cooldown.
  * Reservations are conservative estimates; a real 429 blocks the model until Groq's retry-after.
  */
-const TOKENS_PER_MINUTE = 6000;
+const TOKENS_PER_MINUTE = 7000; // Groq free tier: 8K per model; reservations are settled to real usage
 const REQUESTS_PER_DAY = 900;
 
 interface Window { calls: { at: number; tokens: number }[]; blockedUntil: number; day: string; requests: number }
@@ -51,6 +51,13 @@ export async function reserveGroqWithin(model: string, tokens: number, maxWaitMs
     if (!announced) { onWait?.(wait); announced = true; }
     await new Promise(r => setTimeout(r, Math.min(wait, 5000)));
   }
+}
+
+/** Replaces a reservation with the tokens the request really used, so short answers free their unused allowance. */
+export function settleGroq(model: string, reserved: number, actual: number) {
+  if (!(actual > 0)) return;
+  const entry = [...windowFor(model).calls].reverse().find(c => c.tokens === reserved);
+  if (entry) entry.tokens = Math.min(reserved, actual);
 }
 
 export function blockGroq(model: string, retryAfterSeconds: number) {

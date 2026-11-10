@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { AppError, requireConfigured } from "./errors";
 import { exclusive, loadGlobal, saveGlobal } from "./store";
-import { blockGroq, groqWaitMs, retryAfterSeconds, tryReserveGroq } from "./groq-window";
+import { blockGroq, groqWaitMs, retryAfterSeconds, settleGroq, tryReserveGroq } from "./groq-window";
 
 interface Usage { date: string; calls: number; tokens: number; nextAt: number; window?: { at: number; tokens: number }[] }
 export const DAILY_LIMIT = 400;
@@ -16,14 +16,15 @@ export async function groqUsage(): Promise<Usage> {
   return usage;
 }
 
-export async function completeGroq(system: string, prompt: string, workspaceId: string, json = false) {
+export async function completeGroq(system: string, prompt: string, workspaceId: string, json = false, options: { model?: string; maxTokens?: number } = {}) {
   requireConfigured(process.env.GROQ_API_KEY, "Groq");
-  const model = process.env.GROQ_MODEL || "openai/gpt-oss-20b";
+  const model = options.model || process.env.GROQ_MODEL || "openai/gpt-oss-20b";
+  const maxTokens = options.maxTokens ?? 700;
   const key = createHash("sha256").update(`${workspaceId}|${model}|${json}|${system}|${prompt}`).digest("hex");
   const cached = cache.get(key);
   if (cached && cached.until > Date.now()) return { text: cached.text, cached: true, inputTokens: 0, outputTokens: 0 };
-  // Deliberately conservative budget: one reserved token per UTF-8 byte + output allowance.
-  const reservedTokens = Buffer.byteLength(system + prompt, "utf8") + 700;
+  // Conservative budget: one reserved token per 3 UTF-8 bytes (real usage is nearer 4) + the full output allowance.
+  const reservedTokens = Math.ceil(Buffer.byteLength(system + prompt, "utf8") / 3) + maxTokens;
   // Only the bookkeeping is serialized; concurrent customers never wait on each other's network calls.
   await exclusive("groq-global", async () => {
     const usage = await groqUsage();
@@ -43,7 +44,7 @@ export async function completeGroq(system: string, prompt: string, workspaceId: 
       method: "POST",
       headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model, temperature: 0.2, max_completion_tokens: 700,
+        model, temperature: 0.2, max_completion_tokens: maxTokens,
         ...(model.startsWith("openai/gpt-oss") ? { reasoning_effort: "low" } : {}),
         ...(json ? { response_format: { type: "json_object" } } : {}),
         messages: [{ role: "system", content: system }, { role: "user", content: prompt }],
@@ -63,6 +64,7 @@ export async function completeGroq(system: string, prompt: string, workspaceId: 
   }
   if (!response.ok) throw new AppError(503, `Groq could not complete the request (HTTP ${response.status}). Check the API key and available model. No fallback was presented as AI.`);
   const result = await response.json() as { choices?: { message?: { content?: string } }[]; usage?: { prompt_tokens?: number; completion_tokens?: number } };
+  settleGroq(model, reservedTokens, (result.usage?.prompt_tokens ?? 0) + (result.usage?.completion_tokens ?? 0));
   const text = result.choices?.[0]?.message?.content?.trim();
   if (!text) throw new AppError(502, "Groq returned no answer. Please try a more specific question.");
   if (cache.size >= 100) cache.delete(cache.keys().next().value!);

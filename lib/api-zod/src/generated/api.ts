@@ -141,7 +141,10 @@ export const AddCommerceEvidenceResponse = zod.object({
   "severity": zod.enum(['none', 'minor', 'moderate', 'severe']),
   "confidence": zod.number().min(addCommerceEvidenceResponseTicketsItemEvidenceItemVisionConfidenceMin).max(addCommerceEvidenceResponseTicketsItemEvidenceItemVisionConfidenceMax)
 }).optional().describe('Structured, unverified visual inspection from an open-weight vision model. Never proof of cause, ownership or eligibility.')
-})).optional()
+})).optional(),
+  "language": zod.string().optional().describe('ISO 639-1 code of the customer\'s language'),
+  "languageName": zod.string().optional(),
+  "languageScript": zod.enum(['latin', 'native']).optional()
 })),
   "policy": zod.object({
   "name": zod.string(),
@@ -297,7 +300,10 @@ export const RetryCommerceEvidenceResponse = zod.object({
   "severity": zod.enum(['none', 'minor', 'moderate', 'severe']),
   "confidence": zod.number().min(retryCommerceEvidenceResponseTicketsItemEvidenceItemVisionConfidenceMin).max(retryCommerceEvidenceResponseTicketsItemEvidenceItemVisionConfidenceMax)
 }).optional().describe('Structured, unverified visual inspection from an open-weight vision model. Never proof of cause, ownership or eligibility.')
-})).optional()
+})).optional(),
+  "language": zod.string().optional().describe('ISO 639-1 code of the customer\'s language'),
+  "languageName": zod.string().optional(),
+  "languageScript": zod.enum(['latin', 'native']).optional()
 })),
   "policy": zod.object({
   "name": zod.string(),
@@ -471,7 +477,10 @@ export const UpdateCommercePolicyResponse = zod.object({
   "severity": zod.enum(['none', 'minor', 'moderate', 'severe']),
   "confidence": zod.number().min(updateCommercePolicyResponseTicketsItemEvidenceItemVisionConfidenceMin).max(updateCommercePolicyResponseTicketsItemEvidenceItemVisionConfidenceMax)
 }).optional().describe('Structured, unverified visual inspection from an open-weight vision model. Never proof of cause, ownership or eligibility.')
-})).optional()
+})).optional(),
+  "language": zod.string().optional().describe('ISO 639-1 code of the customer\'s language'),
+  "languageName": zod.string().optional(),
+  "languageScript": zod.enum(['latin', 'native']).optional()
 })),
   "policy": zod.object({
   "name": zod.string(),
@@ -613,7 +622,10 @@ export const GetCommerceStateResponse = zod.object({
   "severity": zod.enum(['none', 'minor', 'moderate', 'severe']),
   "confidence": zod.number().min(getCommerceStateResponseTicketsItemEvidenceItemVisionConfidenceMin).max(getCommerceStateResponseTicketsItemEvidenceItemVisionConfidenceMax)
 }).optional().describe('Structured, unverified visual inspection from an open-weight vision model. Never proof of cause, ownership or eligibility.')
-})).optional()
+})).optional(),
+  "language": zod.string().optional().describe('ISO 639-1 code of the customer\'s language'),
+  "languageName": zod.string().optional(),
+  "languageScript": zod.enum(['latin', 'native']).optional()
 })),
   "policy": zod.object({
   "name": zod.string(),
@@ -755,7 +767,10 @@ export const StartCommerceDemoResponse = zod.object({
   "severity": zod.enum(['none', 'minor', 'moderate', 'severe']),
   "confidence": zod.number().min(startCommerceDemoResponseTicketsItemEvidenceItemVisionConfidenceMin).max(startCommerceDemoResponseTicketsItemEvidenceItemVisionConfidenceMax)
 }).optional().describe('Structured, unverified visual inspection from an open-weight vision model. Never proof of cause, ownership or eligibility.')
-})).optional()
+})).optional(),
+  "language": zod.string().optional().describe('ISO 639-1 code of the customer\'s language'),
+  "languageName": zod.string().optional(),
+  "languageScript": zod.enum(['latin', 'native']).optional()
 })),
   "policy": zod.object({
   "name": zod.string(),
@@ -919,7 +934,10 @@ export const CommerceActionResponse = zod.object({
   "severity": zod.enum(['none', 'minor', 'moderate', 'severe']),
   "confidence": zod.number().min(commerceActionResponseStateTicketsItemEvidenceItemVisionConfidenceMin).max(commerceActionResponseStateTicketsItemEvidenceItemVisionConfidenceMax)
 }).optional().describe('Structured, unverified visual inspection from an open-weight vision model. Never proof of cause, ownership or eligibility.')
-})).optional()
+})).optional(),
+  "language": zod.string().optional().describe('ISO 639-1 code of the customer\'s language'),
+  "languageName": zod.string().optional(),
+  "languageScript": zod.enum(['latin', 'native']).optional()
 })),
   "policy": zod.object({
   "name": zod.string(),

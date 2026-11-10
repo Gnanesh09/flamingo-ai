@@ -47,8 +47,8 @@ test("vision post-rules never let poor or low-confidence output read as a findin
 test("per-model window: models are independent and a full window reports a wait", () => {
   assert.equal(groqWaitMs("test/a", 5000), 0);
   assert.ok(tryReserveGroq("test/a", 5000));
-  assert.ok(!tryReserveGroq("test/a", 2000));
-  assert.ok(groqWaitMs("test/a", 2000) > 50_000);
+  assert.ok(!tryReserveGroq("test/a", 2500));
+  assert.ok(groqWaitMs("test/a", 2500) > 50_000);
   assert.ok(tryReserveGroq("test/b", 5000));
 });
 

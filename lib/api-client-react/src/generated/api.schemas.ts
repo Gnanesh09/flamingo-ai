@@ -739,6 +739,14 @@ export const CommerceTicketProposedAction = {
   return: 'return',
 } as const;
 
+export type CommerceTicketLanguageScript = typeof CommerceTicketLanguageScript[keyof typeof CommerceTicketLanguageScript];
+
+
+export const CommerceTicketLanguageScript = {
+  latin: 'latin',
+  native: 'native',
+} as const;
+
 export type CommerceInvestigationStage = typeof CommerceInvestigationStage[keyof typeof CommerceInvestigationStage];
 
 
@@ -905,6 +913,10 @@ export interface CommerceTicket {
   policyVersion?: string;
   citations?: CommerceCitation[];
   evidence?: CommerceEvidence[];
+  /** ISO 639-1 code of the customer's language */
+  language?: string;
+  languageName?: string;
+  languageScript?: CommerceTicketLanguageScript;
 }
 
 export type CommerceEvidenceInputKind = typeof CommerceEvidenceInputKind[keyof typeof CommerceEvidenceInputKind];

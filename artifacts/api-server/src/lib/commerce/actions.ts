@@ -7,6 +7,8 @@ import { checkout, capturePayment, issueRefund, syncRefund } from "./payments";
 import { policyDecision, runAgents } from "./agent";
 import { canReinvestigateHandoff, canRetryTechnicalHandoff, conversationalReply } from "./conversation";
 import { createReplyWriter } from "./reply-writer";
+import { answerAside, readCustomerMessage } from "./front-desk";
+import { isEnglish, localizeReplies } from "./language";
 
 const staffActions = new Set(["human_reply", "approve_refund", "approve_return", "received_return", "reject"]);
 export function authorizeReturn(t: CommerceTicket) {
@@ -81,30 +83,44 @@ export async function act(d: CommerceDocument, body: CommerceActionInput, origin
   if (action === "escalate" && ["awaiting_return", "refund_pending"].includes(t.status)) throw new AppError(409, "The return or refund is already in progress. Send a message for the team.");
   if (action === "reopen" && !["resolved", "rejected"].includes(t.status)) throw new AppError(409, "Only closed cases can be reopened.");
   t.version++; t.updatedAt = new Date().toISOString();
+  const firstNew = t.messages.length;
   if (staffActions.has(action)) {
     t.assignedTo = "KikoStore demo operator";
     message(t, "human", text);
     step(t, "Human reviewer", `Demo operator selected ${action.replaceAll("_", " ")} with a recorded explanation.`);
   }
   switch (action) {
-    case "message":
-      message(t, "customer", text, body.channel || "text");
-      if (canRetryTechnicalHandoff(t, text)) {
+    case "message": {
+      const channel = body.channel || "text";
+      message(t, "customer", text, channel);
+      // Language detection, translation to English and off-topic recognition happen first;
+      // everything below works on the English text, so every rule and guard still applies.
+      const reading = await readCustomerMessage(d.id, t, o, text);
+      const english = reading.english;
+      // Streaming the English writer would flash English before the translation, so other languages get the exact template.
+      const write = isEnglish(t) ? createReplyWriter(d.id, t.id) : undefined;
+      if (canRetryTechnicalHandoff(t, english)) {
         t.status = "open"; delete t.assignedTo;
         step(t, "Case tracker", "Customer requested a fresh policy check after a technical failure; all eligibility and payment guards still apply.");
-        await runAgents(d, t, o, text, body.channel || "text", { write: createReplyWriter(d.id, t.id) });
+        await runAgents(d, t, o, english, channel, { write });
         break;
       }
-      const reply = conversationalReply(t, o, d.policy, text);
+      const reply = conversationalReply(t, o, d.policy, english);
       if (reply) {
-        message(t, "agent", reply, body.channel || "text");
+        message(t, "agent", reply, channel);
         step(t, "Case tracker", "Answered a conversational follow-up without changing the case decision or financial state.");
+        break;
+      }
+      // Greetings, chit-chat, how-to, store requests, other orders, off-topic, abuse or gibberish:
+      // a short guarded answer that steers back. Cases with staff keep going to staff.
+      if (reading.topic !== "case" && ["open", "awaiting_confirmation"].includes(t.status)) {
+        answerAside(t, o, reading, channel);
         break;
       }
       if (canReinvestigateHandoff(t)) {
         t.status = "open"; delete t.assignedTo;
         step(t, "Case tracker", "Earlier handoff came from an inconclusive policy check, not a rule; Flamingo re-investigated. All eligibility and payment guards still apply.");
-        await runAgents(d, t, o, text, body.channel || "text", { write: createReplyWriter(d.id, t.id) });
+        await runAgents(d, t, o, english, channel, { write });
         break;
       }
       if (["escalated", "awaiting_return", "refund_pending"].includes(t.status)) {
@@ -113,9 +129,10 @@ export async function act(d: CommerceDocument, body: CommerceActionInput, origin
           ? `I’ve added your message to the return case ${t.returnCode}. We’re still waiting for KikoStore to confirm receipt; your refund hasn’t been completed. The team can reply here.`
           : t.status === "refund_pending"
             ? "I’ve added that to your case. The refund is still awaiting payment-provider confirmation; I won’t start a duplicate payment. KikoStore can check its status."
-            : "I’ve passed your message to the KikoStore team with the rest of this conversation. A staff member needs to make the next decision; I’m not confirming a refund on their behalf.", body.channel || "text");
-      } else await runAgents(d, t, o, text, body.channel || "text", { write: createReplyWriter(d.id, t.id) });
+            : "I’ve passed your message to the KikoStore team with the rest of this conversation. A staff member needs to make the next decision; I’m not confirming a refund on their behalf.", channel);
+      } else await runAgents(d, t, o, english, channel, { write });
       break;
+    }
     case "confirm":
       message(t, "customer", `I confirm the proposed ${t.proposedAction}.`);
       if (t.proposedAction === "refund") { delete t.proposedAction; await issueRefund(d, o, t, save); }
@@ -145,5 +162,7 @@ export async function act(d: CommerceDocument, body: CommerceActionInput, origin
       break;
     default: throw new AppError(400, "Unsupported action.");
   }
+  // Agent and system replies from this action reach the customer in their language.
+  await localizeReplies(d.id, t, firstNew);
   return { ticketId: t.id };
 }

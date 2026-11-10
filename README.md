@@ -52,6 +52,8 @@ The project contains three connected parts:
 
 - **Order-aware from the first message.** The product, price, delivery and payment are already loaded, so the customer never repeats them.
 - **Text or live voice.** Real-time speech-to-text and natural spoken replies (Deepgram). Customers can upload photos during a call without hanging up.
+- **Any language.** Customers can write or speak in Hindi (including Hinglish typed in English letters), Spanish, French and dozens of other languages. Flamingo replies in the same language. Every decision is still made in English by the store's rules; a translated reply is used only if every amount, code and button name in it is unchanged.
+- **Handles anything a customer types.** Greetings, small talk, product how-to questions, requests for another order, off-topic questions, insults and gibberish get a short, polite answer and are steered back to the order. None of these change the case or any payment.
 - **Photo inspection.** An open-weight vision model checks that the photo shows the ordered product and describes visible damage. Text in images is read with OCR.
 - **Decides within policy:**
 
@@ -135,7 +137,7 @@ flowchart LR
 | Layer | Technology |
 |---|---|
 | Agent orchestration | **LangGraph** (LangChain JS) |
-| Language models | **Groq**: `openai/gpt-oss-20b` (understanding), Qwen (reply writer and vision) |
+| Language models | **Groq**: `openai/gpt-oss-20b` (understanding and reply translation), `openai/gpt-oss-120b` (language detection and message reading), Qwen (reply writer and vision) |
 | Policy search and OCR | **Elasticsearch** hybrid/semantic search, Jina OCR |
 | Voice | **Deepgram** streaming speech-to-text and Aura-2 text-to-speech |
 | Payments | **PayPal REST API** (Orders v2 checkout and capture, Payments v2 refunds), Sandbox |
@@ -365,7 +367,7 @@ pnpm --filter @workspace/api-spec run codegen
 | `ELASTICSEARCH_URL` | No | Semantic policy search and OCR |
 | `ELASTICSEARCH_API_KEY` | No | Semantic policy search and OCR |
 | `ELASTICSEARCH_INFERENCE_ID` | No | Inference endpoint for semantic policy search |
-| `GROQ_MODEL`, `GROQ_WRITER_MODEL`, `GROQ_VISION_MODEL` | No | Override the default models |
+| `GROQ_MODEL`, `GROQ_WRITER_MODEL`, `GROQ_VISION_MODEL`, `GROQ_LANGUAGE_MODEL`, `GROQ_TRANSLATION_MODEL` | No | Override the default models |
 | `LOCAL_PORT`, `API_PORT`, `WEB_PORT` | No | Ports for `pnpm run dev:local` |
 | `LOG_LEVEL` | No | API log level (default `info`) |
 
@@ -393,13 +395,14 @@ pnpm --filter @workspace/api-spec run codegen
 - Demo-controller sessions instead of real customer and staff authentication.
 - No real shipping, return labels or carrier tracking.
 - Provider usage quotas are tracked in a single process. Production needs a shared quota store.
+- Replies in other languages are not streamed word by word; they appear once translated. Staff messages are not translated.
 
 **What's next**
 - An SDK and Shopify and WooCommerce plugins that connect orders, payments and policies in minutes.
 - Multi-store support with secure merchant sign-in.
 - Live PayPal payments, plus the PayPal Disputes API to resolve problems before they become chargebacks.
 - Fraud signals: reused or internet photos, refund frequency, mismatched products.
-- Hindi and multilingual voice.
+- Natural server-side voices for more languages. Today Deepgram speaks English, Spanish, French, German, Italian, Dutch and Japanese; other languages, including Hindi, use the browser's built-in voice.
 - Merchant analytics: automation rate, time to resolution and cost per case.
 
 ---

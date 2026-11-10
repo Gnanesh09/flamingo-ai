@@ -40,7 +40,7 @@ export async function attachLiveVoice(client: WebSocket, workspace: string, tick
     active.set(workspace, (active.get(workspace) || 0) + 1); counted = true;
     await voiceBudget();
     if (client.readyState !== WebSocket.OPEN) { release(); return; }
-    upstream = new WebSocket("wss://api.deepgram.com/v1/listen?model=nova-3&language=en&smart_format=true&interim_results=true&endpointing=300", {
+    upstream = new WebSocket("wss://api.deepgram.com/v1/listen?model=nova-3&language=multi&smart_format=true&interim_results=true&endpointing=300", {
       headers: { Authorization: `Token ${process.env.DEEPGRAM_API_KEY}` }, handshakeTimeout: 10000,
     });
     upstream.once("open", () => { started = Date.now(); send({ type: "voice_ready" }); });

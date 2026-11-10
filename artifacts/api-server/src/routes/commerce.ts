@@ -8,6 +8,7 @@ import { createDemo, readDemo, view, changeDemo, recost, step } from "../lib/com
 import { cookieName, notify } from "../lib/commerce/realtime";
 import { act } from "../lib/commerce/actions";
 import { speak, transcribe } from "../lib/flamingo/voice";
+import { VOICE_MODELS } from "../lib/commerce/language";
 import { updatePolicy } from "../lib/commerce/policy-library";
 
 const router: IRouter = Router();
@@ -77,7 +78,10 @@ router.post("/commerce/voice/speak", async (req, res) => {
     const t = d.tickets.find(t => t.id === body.ticketId);
     const m = t?.messages.find(m => m.id === body.messageId && ["agent", "human", "system"].includes(m.role));
     if (!t || !m) throw new AppError(404, "Spoken message not found.");
-    const audio = await speak(m.text.slice(0, 1800));
+    const voice = VOICE_MODELS[t.language || "en"];
+    // Deepgram has no voice for this language; the browser speaks it instead of an English voice mangling it.
+    if (!voice) throw new AppError(422, "Spoken replies in this language use your browser's voice.");
+    const audio = await speak(m.text.slice(0, 1800), voice);
     t.speechCharacters += m.text.slice(0, 1800).length; recost(t);
     return audio;
   });

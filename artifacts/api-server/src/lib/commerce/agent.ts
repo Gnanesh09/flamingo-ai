@@ -110,7 +110,9 @@ export async function runAgents(d: CommerceDocument, t: CommerceTicket, o: Comme
         if (["unclear", "other"].includes(merged.reason) && !u.negated) {
           merged.reason = parsed.reason;
           // An extracted detail must be a substring of an actual customer message.
-          if (parsed.detail && t.messages.some(m => m.role === "customer" && m.text.toLowerCase().includes(parsed.detail.toLowerCase()))) merged.detail = parsed.detail;
+          // Non-English messages are checked against their English translation.
+          const said = (m: string) => m.toLowerCase().includes(parsed.detail.toLowerCase());
+          if (parsed.detail && (said(text) || t.messages.some(m => m.role === "customer" && said(m.text)))) merged.detail = parsed.detail;
           else if (["damaged", "defective", "wrong_item"].includes(merged.reason) && substantive(text, product.name)) merged.detail = text.slice(0, 240);
         }
         step(t, "Conversation specialist", `Context-aware Groq interpretation${result.cached ? " (cached)" : ""}; supplemental assessment: ${parsed.policyAssessment}. Model has no payment tools.`);
@@ -129,10 +131,12 @@ export async function runAgents(d: CommerceDocument, t: CommerceTicket, o: Comme
     .addNode("investigate", ({ understanding }) => {
       const u = { ...understanding };
       // Resolution first: a described fault implies the customer wants it put right; they still confirm.
-      if (u.intent === "unknown" && ["damaged", "defective", "wrong_item"].includes(u.reason) && u.detail) u.intent = "refund";
+      if (["unknown", "question"].includes(u.intent) && ["damaged", "defective", "wrong_item"].includes(u.reason) && u.detail) u.intent = "refund";
       if (u.intent === "unknown" && u.reason === "changed_mind") u.intent = "return";
       // Never loop on "why?": after a few replies, any in-window reason qualifies for a standard return.
-      const replies = t.messages.filter(m => m.role === "customer" && !m.text.startsWith("Attached ")).length;
+      // Off-topic messages answered by the front desk are not answers about the case.
+      const asides = t.steps.filter(s => s.agent === "Conversation specialist" && s.detail.startsWith("Message was ")).length;
+      const replies = t.messages.filter(m => m.role === "customer" && !m.text.startsWith("Attached ")).length - asides;
       if (["refund", "return"].includes(u.intent) && u.reason === "unclear" && replies >= 3 && text.trim()) { u.reason = "other"; u.detail = text.slice(0, 240); }
       t.intent = u.intent; t.reason = u.reason;
       const wantsAction = ["refund", "return"].includes(u.intent);
@@ -146,10 +150,13 @@ export async function runAgents(d: CommerceDocument, t: CommerceTicket, o: Comme
       else if (u.reason === "wrong_item" && !u.detail) question = "What did you receive instead of the item on this order?";
       // Ask for one photo of a reported fault before approving. A reply without one never blocks the case.
       const agentTexts = t.messages.filter(m => m.role === "agent").map(m => m.text);
-      const photoAsked = agentTexts.some(m => m.includes(PHOTO_CUE));
+      // Replies may have been translated, so the English question in the coordinator's steps also counts.
+      const asked = t.steps.filter(s => s.agent === "Investigation coordinator").map(s => s.detail);
+      const photoAsked = agentTexts.some(m => m.includes(PHOTO_CUE)) || asked.some(s => s.includes(PHOTO_CUE));
+      const photoAskedLast = !!agentTexts.at(-1)?.includes(PHOTO_CUE) || !!asked.at(-1)?.includes(PHOTO_CUE);
       if (!question && wantsAction && FAULTS.includes(u.reason) && u.detail && !t.evidence?.length) {
         if (!photoAsked) question = photoQuestion(u.reason, product.name, channel);
-        else if (agentTexts.at(-1)?.includes(PHOTO_CUE) && /\b(wait|hold on|one (sec|second|min|minute)|uploading|sending|i'?ll (send|upload|add|take)|let me (send|upload|add|take)|will (send|upload|add))\b/i.test(text))
+        else if (photoAskedLast && /\b(wait|hold on|one (sec|second|min|minute)|uploading|sending|i'?ll (send|upload|add|take)|let me (send|upload|add|take)|will (send|upload|add))\b/i.test(text))
           question = "Sure, take your time. Add it with Photos and I’ll continue as soon as it arrives.";
         else photoSkipped = true;
       }

@@ -24,6 +24,31 @@ function pickMime() {
 }
 
 /** Streaming STT, factual acknowledgment cues, and saved replies bound to one ticket. */
+/** Languages with a Deepgram Aura-2 voice on the server. Keep in sync with VOICE_MODELS in the API. */
+const AURA_LANGUAGES = new Set(["en", "es", "fr", "de", "it", "nl", "ja"]);
+
+/** Reads text with the browser's speech synthesis in the given language. Resolves when done, or at once if no voice exists. */
+function speakInBrowser(text: string, language: string, onStart: () => void, register: (stop: () => void) => void) {
+  return new Promise<void>((resolve) => {
+    const synth = typeof window !== "undefined" ? window.speechSynthesis : undefined;
+    if (!synth || !text) return resolve();
+    const voices = synth.getVoices();
+    const voice = voices.find(v => v.lang.toLowerCase().startsWith(language.toLowerCase()));
+    // With no matching voice, an English voice would garble the words; the reply stays readable in chat.
+    if (voices.length && !voice) return resolve();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = voice?.lang || language;
+    if (voice) u.voice = voice;
+    const timeout = window.setTimeout(() => { synth.cancel(); resolve(); }, 90_000);
+    const done = () => { window.clearTimeout(timeout); resolve(); };
+    register(() => { synth.cancel(); done(); });
+    u.onstart = onStart;
+    u.onend = done; u.onerror = done;
+    synth.cancel();
+    synth.speak(u);
+  });
+}
+
 export function useCommerceCall(ticketId: string | undefined, getState: () => CommerceState | undefined) {
   const { run } = useCommerce();
   const speak = useCommerceSpeak();
@@ -93,6 +118,9 @@ export function useCommerceCall(ticketId: string | undefined, getState: () => Co
 
   const playCue = useCallback(async () => {
     if (!alive.current || audio.current) return;
+    // The spoken acknowledgment is English; skip it when the customer speaks another language.
+    const language = fns.current.getState()?.tickets.find(t => t.id === fns.current.ticketId)?.language;
+    if (language && language !== "en") return;
     const token = generation.current;
     try {
       cueCache.current ||= fetch("/api/commerce/voice/cue", { credentials: "include" }).then(async r => {
@@ -134,6 +162,16 @@ export function useCommerceCall(ticketId: string | undefined, getState: () => Co
     if (!id) return;
     const token = generation.current;
     setStatus("thinking");
+    const ticket = fns.current.getState()?.tickets.find(t => t.id === id);
+    const language = ticket?.language || "en";
+    if (!AURA_LANGUAGES.has(language)) {
+      // Deepgram has no voice for this language, so the browser's own voice reads the reply.
+      const text = ticket?.messages.find(m => m.id === messageId)?.text || "";
+      await speakInBrowser(text, language, () => setStatus("speaking"), (done) => { finishAudio.current = done; });
+      spoken.current.add(messageId);
+      finishAudio.current = null;
+      return;
+    }
     const sp = await fns.current.s({ data: { ticketId: id, messageId } });
     if (!alive.current || token !== generation.current) return;
     await new Promise<void>((res, reject) => {

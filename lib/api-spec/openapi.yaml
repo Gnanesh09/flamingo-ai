@@ -942,6 +942,9 @@ components:
         policyVersion: { type: string }
         citations: { type: array, items: { $ref: "#/components/schemas/CommerceCitation" } }
         evidence: { type: array, items: { $ref: "#/components/schemas/CommerceEvidence" } }
+        language: { type: string, description: "ISO 639-1 code of the customer's language" }
+        languageName: { type: string }
+        languageScript: { type: string, enum: [latin, native] }
     CommerceEvidenceInput:
       type: object
       required: [ticketId, version, name, kind, image]

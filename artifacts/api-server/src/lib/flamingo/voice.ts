@@ -34,15 +34,16 @@ export async function transcribe(audio: string, mimeType: string) {
   if (!/^[A-Za-z0-9+/]+={0,2}$/.test(audio)) throw new AppError(400, "Invalid audio encoding.");
   const bytes = Buffer.from(audio, "base64");
   if (bytes.length < 100 || bytes.length > 3_000_000) throw new AppError(400, "Record a short voice turn of up to 20 seconds.");
-  const response = await deepgram("listen?model=nova-3&smart_format=true&language=en", mimeType, new Uint8Array(bytes));
+  const response = await deepgram("listen?model=nova-3&smart_format=true&language=multi", mimeType, new Uint8Array(bytes));
   const data = await response.json() as { results?: { channels?: { alternatives?: { transcript?: string }[] }[] } };
   const text = data.results?.channels?.[0]?.alternatives?.[0]?.transcript;
   if (typeof text !== "string") throw new AppError(502, "Deepgram returned no transcript.");
   return { text: text.slice(0, 1000) };
 }
 
-export async function speak(text: string) {
-  const response = await deepgram("speak?model=aura-2-thalia-en&encoding=mp3", "application/json", JSON.stringify({ text }));
+/** `voice` is an Aura-2 model name; defaults to the English voice. */
+export async function speak(text: string, voice = "aura-2-thalia-en") {
+  const response = await deepgram(`speak?model=${encodeURIComponent(voice)}&encoding=mp3`, "application/json", JSON.stringify({ text }));
   const bytes = Buffer.from(await response.arrayBuffer());
   if (bytes.length > 5_000_000) throw new AppError(502, "Voice response was unexpectedly large.");
   return { audio: bytes.toString("base64"), mimeType: "audio/mpeg" };
